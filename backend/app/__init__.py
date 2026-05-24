@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager
 from .models import db
 from celery.schedules import crontab
 from datetime import timedelta
+import os 
 
 mail = Mail()
 cache = Cache()
@@ -38,8 +39,7 @@ def create_app():
 
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ppa_v2.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ppa_v2.db') 
     app.config['SECRET_KEY'] = '756d6a85b79fd9faad3a2958f87191993c9fd181f0bcf04b'
 
     # JWT CONFIG
