@@ -520,3 +520,24 @@ def trigger_export():
 
     export_applications_csv.delay(student.email)
     return jsonify({"message": "Batch job started! You will receive an email once done."}), 202
+
+@main.route('/init-db', methods=['GET'])
+def init_db():
+    try:
+        from app.models import db, User
+        from werkzeug.security import generate_password_hash
+        
+        db.create_all()
+        
+        if not User.query.filter_by(role='Admin').first():
+            admin = User(
+                username='admin',
+                email='mswati9472@gmail.com',
+                password=generate_password_hash('admin123'),
+                role='Admin'
+            )
+            db.session.add(admin)
+            db.session.commit()
+        return {"status": "success", "message": "Tables initialized successfully!"}, 200
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 500
