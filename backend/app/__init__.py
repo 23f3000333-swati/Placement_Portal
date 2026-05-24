@@ -13,14 +13,16 @@ mail = Mail()
 cache = Cache()
 jwt = JWTManager()
 
-# Initialize Celery 
+# ─── DYNAMIC PRODUCTION REDIS FETCH ───
+# Falls back to local localhost if REDIS_URL environment variable isn't configured on Render
+redis_provider_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
+# Initialize Celery with dynamic broker string
 celery = Celery(__name__,
-                broker='redis://localhost:6379/0',
-                result_backend='redis://localhost:6379/0')
+                broker=redis_provider_url,
+                result_backend=redis_provider_url)
 
 # BEAT SCHEDULE
-
 celery.conf.beat_schedule = {
     'send-daily-reminders': {
         'task': 'app.tasks.send_daily_reminders',
@@ -46,9 +48,9 @@ def create_app():
     app.config['JWT_SECRET_KEY'] = 'ppa-jwt-super-secret-key-2026'
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=12)
 
-    # Celery Config
-    app.config['broker_url'] = 'redis://localhost:6379/0'
-    app.config['result_backend'] = 'redis://localhost:6379/0'
+    # Celery Config Linked to Dynamic Target
+    app.config['broker_url'] = redis_provider_url
+    app.config['result_backend'] = redis_provider_url
 
     # Mail Config
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -57,9 +59,14 @@ def create_app():
     app.config['MAIL_USERNAME'] = 'mswati9472@gmail.com'
     app.config['MAIL_PASSWORD'] = 'qzeo wtsi qubn oyli'
 
-    # Redis Cache Config
-    app.config['CACHE_TYPE'] = 'RedisCache'
-    app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
+    # ─── DYNAMIC CACHING STRATEGY FOR PRODUCTION ───
+    # If REDIS_URL exists on Render, use RedisCache. Otherwise fallback safely to SimpleCache.
+    if os.environ.get('REDIS_URL'):
+        app.config['CACHE_TYPE'] = 'RedisCache'
+        app.config['CACHE_REDIS_URL'] = redis_provider_url
+    else:
+        app.config['CACHE_TYPE'] = 'SimpleCache'
+        
     app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 
     db.init_app(app)
