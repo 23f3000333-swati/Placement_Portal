@@ -3,10 +3,6 @@
     {
       "source": "/api/:path*",
       "destination": "https://ppa-backend.onrender.com/api/:path*"
-    },
-    {
-      "source": "/http://127.0.0.1:5000/api/:path*",
-      "destination": "https://ppa-backend.onrender.com/api/:path*"
     }
   ]
 }
